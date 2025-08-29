@@ -1,0 +1,139 @@
+.PHONY: build run test clean migrate-up migrate-down migrate-reset migrate-create dev-create-db dev-drop-db
+
+# Go parameters
+GOCMD=go
+GOBUILD=$(GOCMD) build
+GOCLEAN=$(GOCMD) clean
+GOTEST=$(GOCMD) test
+GOGET=$(GOCMD) get
+GOMOD=$(GOCMD) mod
+BINARY_NAME=media-service
+BINARY_UNIX=$(BINARY_NAME)_unix
+
+# Database parameters
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=media_service_dev
+DB_URL=postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+
+# Migration parameters
+MIGRATE_VERSION=v4.17.0
+MIGRATE_URL=https://github.com/golang-migrate/migrate/releases/download/$(MIGRATE_VERSION)/migrate.linux-amd64.tar.gz
+
+all: test build
+
+build:
+	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd
+
+build-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o bin/$(BINARY_UNIX) -v ./cmd
+
+run:
+	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd && ./bin/$(BINARY_NAME)
+
+test:
+	$(GOTEST) -v ./...
+
+test-coverage:
+	$(GOTEST) -race -coverprofile=coverage.out -covermode=atomic ./...
+	$(GOCMD) tool cover -html=coverage.out
+
+clean:
+	$(GOCLEAN)
+	rm -f bin/$(BINARY_NAME)
+	rm -f bin/$(BINARY_UNIX)
+
+deps:
+	$(GOMOD) download
+	$(GOMOD) verify
+
+tidy:
+	$(GOMOD) tidy
+
+# Install migrate tool (Linux/macOS)
+install-migrate:
+	@which migrate > /dev/null || (echo "Installing migrate tool..." && \
+	curl -L $(MIGRATE_URL) | tar xvz && \
+	sudo mv migrate /usr/local/bin/)
+
+# Database operations
+dev-create-db:
+	createdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) $(DB_NAME)
+
+dev-drop-db:
+	dropdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) $(DB_NAME)
+
+# Migration operations
+migrate-up:
+	migrate -path migrations -database "$(DB_URL)" up
+
+migrate-down:
+	migrate -path migrations -database "$(DB_URL)" down
+
+migrate-reset:
+	migrate -path migrations -database "$(DB_URL)" down
+	migrate -path migrations -database "$(DB_URL)" up
+
+migrate-force:
+	migrate -path migrations -database "$(DB_URL)" force $(VERSION)
+
+migrate-version:
+	migrate -path migrations -database "$(DB_URL)" version
+
+migrate-create:
+	migrate create -ext sql -dir migrations -seq $(NAME)
+
+# Development helpers
+dev-setup: dev-create-db migrate-up
+	@echo "Development environment setup complete"
+
+dev-reset: dev-drop-db dev-create-db migrate-up
+	@echo "Development environment reset complete"
+
+# Docker operations (optional)
+docker-build:
+	docker build -t $(BINARY_NAME) .
+
+docker-run:
+	docker run -p 8082:8082 $(BINARY_NAME)
+
+# Linting and formatting
+lint:
+	golangci-lint run
+
+fmt:
+	$(GOCMD) fmt ./...
+
+vet:
+	$(GOCMD) vet ./...
+
+# Generate code (if using protobuf, swagger, etc.)
+generate:
+	$(GOCMD) generate ./...
+
+# Run with specific config
+run-dev:
+	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd && ./bin/$(BINARY_NAME)
+
+run-prod:
+	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd && \
+	CONFIG_FILE=prod.config.yaml ./bin/$(BINARY_NAME)
+
+# Help
+help:
+	@echo "Available commands:"
+	@echo "  build       - Build the application"
+	@echo "  run         - Build and run the application"
+	@echo "  test        - Run tests"
+	@echo "  clean       - Clean build artifacts"
+	@echo "  deps        - Download dependencies"
+	@echo "  tidy        - Tidy go modules"
+	@echo "  migrate-up  - Run database migrations up"
+	@echo "  migrate-down- Run database migrations down"
+	@echo "  migrate-reset- Reset database migrations"
+	@echo "  dev-setup   - Setup development environment"
+	@echo "  dev-reset   - Reset development environment"
+	@echo "  lint        - Run linter"
+	@echo "  fmt         - Format code"
