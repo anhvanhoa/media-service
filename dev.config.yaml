@@ -1,85 +1,72 @@
-app:
-  name: "media-service"
-  node_env: "development"
-  port_grpc: 8082
-  host_grpc: "0.0.0.0"
+node_env: "development"
+name_service: "MediaService"
+port_grpc: 50053
+host_grpc: "localhost"
+interval_check: "20s"
+timeout_check: "5s"
 
-url_db: "postgres://postgres:postgres@localhost:5432/media_service_dev"
+url_db: "postgres://postgres:123456@localhost:5432/media_service_db?sslmode=disable"
 
-redis:
-  addr: "localhost:6379"
-  password: ""
-  db: 1
+storage_local:
+    upload_dir: "C:/uploads"
 
-storage:
-  provider: "local" # local, s3, gcs
-  local:
-    upload_dir: "./uploads"
-    public_url: "http://localhost:8080/uploads"
-  s3:
-    region: "us-east-1"
-    bucket: "media-service-bucket"
-    access_key: ""
-    secret_key: ""
-    endpoint: ""
-  
-# Media processing configuration
-media:
-  max_file_size: 100MB # 100MB
-  allowed_image_types:
-    - "image/jpeg"
-    - "image/png"
-    - "image/gif"
-    - "image/webp"
-  allowed_video_types:
-    - "video/mp4"
-    - "video/webm"
-    - "video/quicktime"
-    - "video/x-msvideo"
+# # Media processing configuration
+# media:
+#   max_file_size: 100MB # 100MB
+#   allowed_image_types:
+#     - "image/jpeg"
+#     - "image/png"
+#     - "image/gif"
+#     - "image/webp"
+#   allowed_video_types:
+#     - "video/mp4"
+#     - "video/webm"
+#     - "video/quicktime"
+#     - "video/x-msvideo"
   
   # Image optimization settings
-  image:
-    max_width: 2048
-    max_height: 2048
-    quality: 85
-    formats:
-      - "webp"
-      - "jpeg"
-    thumbnails:
-      small: "150x150"
-      medium: "300x300"
-      large: "600x600"
+  # image:
+  #   max_width: 2048
+  #   max_height: 2048
+  #   quality: 85
+  #   formats:
+  #     - "webp"
+  #     - "jpeg"
+  #   thumbnails:
+  #     small: "150x150"
+  #     medium: "300x300"
+  #     large: "600x600"
   
-  # Video optimization settings
-  video:
-    max_duration: 1800 # 30 minutes in seconds
-    max_bitrate: "2M"
-    formats:
-      - "mp4"
-      - "webm"
-    resolutions:
-      - "480p"
-      - "720p"
-      - "1080p"
+  # # Video optimization settings
+  # video:
+  #   max_duration: 1800 # 30 minutes in seconds
+  #   max_bitrate: "2M"
+  #   formats:
+  #     - "mp4"
+  #     - "webm"
+  #   resolutions:
+  #     - "480p"
+  #     - "720p"
+  #     - "1080p"
 
 # gRPC client configurations
-grpc_clients:
-  auth_service:
-    addr: "localhost:8081"
-    timeout: 30s
+# grpc_clients:
+#   auth_service:
+#     addr: "localhost:8081"
+#     timeout: 30s
 
 # Queue configuration for async processing
 queue:
-  redis_addr: "localhost:6379"
-  redis_db: 2
-  queues:
-    - name: "media_processing"
-      concurrency: 5
-    - name: "media_cleanup"
-      concurrency: 2
+  addr: "localhost:6379"
+  db: 1
+  password: ""
+  network: "tcp"
+  timeout: 30
+  tls: false
+  retry: 3
 
-# Logging configuration
-logging:
-  level: "debug"
-  format: "json"
-  output: "stdout"
+# # Logging configuration
+# logging:
+#   level: "debug"
+#   format: "json"
+#   output: "stdout"

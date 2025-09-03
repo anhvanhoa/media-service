@@ -2,27 +2,35 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"media-service/domain/entity"
 	"media-service/domain/repository"
 
+	"github.com/anhvanhoa/service-core/domain/goid"
 	"github.com/anhvanhoa/service-core/domain/log"
+	"github.com/anhvanhoa/service-core/domain/processing"
+	"github.com/anhvanhoa/service-core/domain/storage"
 )
 
 // MediaUsecases aggregates all media-related use cases
 type MediaUsecases struct {
-	UploadUC      *UploadMediaUsecase
-	GetUC         *GetMediaUsecase
-	ListUC        *ListMediaUsecase
-	UpdateUC      *UpdateMediaUsecase
-	DeleteUC      *DeleteMediaUsecase
-	ProcessUC     *ProcessMediaUsecase
-	GetVariantsUC *GetMediaVariantsUsecase
+	UploadUC       *UploadMediaUsecase       // Legacy streaming upload
+	UploadStreamUC *UploadMediaStreamUsecase // Improved streaming upload
+	GetUC          *GetMediaUsecase
+	ListUC         *ListMediaUsecase
+	UpdateUC       *UpdateMediaUsecase
+	DeleteUC       *DeleteMediaUsecase
+	ProcessUC      *ProcessMediaUsecase
+	GetVariantsUC  *GetMediaVariantsUsecase
 }
 
 // MediaUsecaseInterfaces defines interfaces for all media operations
 type MediaUsecaseInterfaces interface {
-	// Upload uploads a new media file
+	// Upload uploads a new media file (legacy streaming)
 	UploadMedia(ctx context.Context, req *UploadMediaRequest) (*entity.Media, error)
+
+	// UploadStream uploads a media file with streaming
+	UploadMediaStream(ctx context.Context, req *UploadMediaStreamRequest) (*entity.Media, error)
 
 	// GetByID retrieves a media by ID
 	GetByID(ctx context.Context, id string) (*entity.Media, error)
@@ -48,11 +56,24 @@ func NewMediaUsecases(
 	mediaRepo repository.MediaRepository,
 	variantRepo repository.MediaVariantRepository,
 	logger *log.LogGRPCImpl,
+	processing processing.ProcessingI,
+	storage storage.StorageI,
 ) *MediaUsecases {
+	goid := goid.NewGoId().UUID()
 	return &MediaUsecases{
 		UploadUC: NewUploadMediaUsecase(
 			mediaRepo,
 			logger,
+			goid,
+			processing,
+			storage,
+		),
+		UploadStreamUC: NewUploadMediaStreamUsecase(
+			mediaRepo,
+			logger,
+			goid,
+			processing,
+			storage,
 		),
 		GetUC: NewGetMediaUsecase(
 			mediaRepo,
@@ -85,7 +106,12 @@ func NewMediaUsecases(
 
 // Implementation of MediaUsecaseInterfaces
 func (m *MediaUsecases) UploadMedia(ctx context.Context, req *UploadMediaRequest) (*entity.Media, error) {
+	fmt.Println("UploadMedia (legacy)", req)
 	return m.UploadUC.Execute(ctx, req)
+}
+
+func (m *MediaUsecases) UploadMediaStream(ctx context.Context, req *UploadMediaStreamRequest) (*entity.Media, error) {
+	return m.UploadStreamUC.Execute(ctx, req)
 }
 
 func (m *MediaUsecases) GetByID(ctx context.Context, id string) (*entity.Media, error) {

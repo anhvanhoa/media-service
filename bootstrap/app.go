@@ -4,29 +4,30 @@ import (
 	"media-service/domain/usecase"
 	"media-service/infrastructure/grpc_service"
 	"media-service/infrastructure/repo"
-	"time"
-
 	"media-service/proto/media/v1"
+	"time"
 
 	"github.com/anhvanhoa/service-core/bootstrap/db"
 	grpc_server "github.com/anhvanhoa/service-core/bootstrap/grpc"
 	"github.com/anhvanhoa/service-core/domain/log"
+	"github.com/anhvanhoa/service-core/domain/processing"
 	"github.com/anhvanhoa/service-core/domain/queue"
+	"github.com/anhvanhoa/service-core/domain/storage"
 	"github.com/go-pg/pg/v10"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
 // App represents the application with all its dependencies
 type App struct {
-	Env            *Env
-	DB             *pg.DB
-	Logger         *log.LogGRPCImpl
-	GRPCServer     *grpc.Server
-	QueueClient    queue.QueueClient
-	MediaUsecases  *usecase.MediaUsecases
-	StorageService usecase.StorageService
+	Env           *Env
+	DB            *pg.DB
+	Logger        *log.LogGRPCImpl
+	GRPCServer    *grpc.Server
+	QueueClient   queue.QueueClient
+	MediaUsecases *usecase.MediaUsecases
+	Storage       storage.StorageI
+	MediaServer   media.MediaServiceServer
 }
 
 func NewApp() *App {
@@ -54,45 +55,35 @@ func NewApp() *App {
 	mediaRepo := repo.NewMediaRepository(db)
 	variantRepo := repo.NewMediaVariantRepository(db)
 
-	storageService := repo.NewLocalStorageService(
+	storageService := storage.NewLocalStorageService(
 		env.STORAGE_LOCAL.UPLOAD_DIR,
-		env.STORAGE_LOCAL.PUBLIC_URL,
 		logger,
 	)
 
-	// processingService := repo.NewMediaProcessingService(
-	// 	variantRepo,
-	// 	storageService,
-	// 	queueClient,
-	// 	logger,
-	// )
+	processingService := processing.NewMediaProcessingService(
+		storageService,
+		queueClient,
+		logger,
+	)
 
 	mediaUsecases := usecase.NewMediaUsecases(
 		mediaRepo,
 		variantRepo,
 		logger,
+		processingService,
+		storageService,
 	)
 
-	// Initialize gRPC server
-	grpcServer := grpc.NewServer()
-
-	// Register services
 	mediaServiceServer := grpc_service.NewMediaServiceServer(mediaUsecases, logger)
-	media.RegisterMediaServiceServer(grpcServer, mediaServiceServer)
-
-	// Enable reflection for development
-	if env.NODE_ENV == "development" {
-		reflection.Register(grpcServer)
-	}
 
 	return &App{
-		Env:            env,
-		DB:             db,
-		Logger:         logger,
-		GRPCServer:     grpcServer,
-		QueueClient:    queueClient,
-		MediaUsecases:  mediaUsecases,
-		StorageService: storageService,
+		Env:           env,
+		DB:            db,
+		Logger:        logger,
+		QueueClient:   queueClient,
+		MediaUsecases: mediaUsecases,
+		Storage:       storageService,
+		MediaServer:   mediaServiceServer,
 	}
 }
 
@@ -106,7 +97,7 @@ func (app *App) Start() *grpc_server.GRPCServer {
 		config,
 		app.Logger,
 		func(server *grpc.Server) {
-			// media.RegisterMediaServiceServer(server, app.MediaUsecases)
+			media.RegisterMediaServiceServer(server, app.MediaServer)
 		},
 	)
 }

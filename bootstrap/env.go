@@ -9,7 +9,6 @@ import (
 
 type StorageLocal struct {
 	UPLOAD_DIR string `mapstructure:"upload_dir"`
-	PUBLIC_URL string `mapstructure:"public_url"`
 }
 
 type QueueRedis struct {

@@ -14,6 +14,19 @@ const (
 	MediaTypeOther MediaType = "other"
 )
 
+type MimeType string
+
+const (
+	MimeTypeImage MimeType = "image/jpeg"
+	MimeTypeWebP  MimeType = "image/webp"
+	MimeTypePNG   MimeType = "image/png"
+	MimeTypeJPEG  MimeType = "image/jpeg"
+	MimeTypeGIF   MimeType = "image/gif"
+	MimeTypeVideo MimeType = "video/mp4"
+	MimeTypeAudio MimeType = "audio/mpeg"
+	MimeTypeOther MimeType = "application/octet-stream"
+)
+
 // ProcessingStatus represents the processing status of media
 type ProcessingStatus string
 
@@ -33,9 +46,9 @@ type Media struct {
 	URL              string            `json:"url" pg:"url"`
 	MimeType         string            `json:"mime_type" pg:"mime_type"`
 	Type             MediaType         `json:"type" pg:"type"`
-	Width            *int32            `json:"width,omitempty" pg:"width"`
-	Height           *int32            `json:"height,omitempty" pg:"height"`
-	Duration         *int32            `json:"duration,omitempty" pg:"duration"` // For video/audio in seconds
+	Width            *int              `json:"width,omitempty" pg:"width"`
+	Height           *int              `json:"height,omitempty" pg:"height"`
+	Duration         *float64          `json:"duration,omitempty" pg:"duration"` // For video/audio in seconds
 	ProcessingStatus ProcessingStatus  `json:"processing_status" pg:"processing_status"`
 	Metadata         map[string]string `json:"metadata,omitempty" pg:"metadata"`
 	CreatedAt        time.Time         `json:"created_at" pg:"created_at,default:now()"`

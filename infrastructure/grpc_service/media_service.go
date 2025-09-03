@@ -5,36 +5,44 @@ import (
 	"fmt"
 	"io"
 	"media-service/domain/entity"
+	"os"
 
 	"media-service/domain/usecase"
 	"strings"
 
 	"media-service/proto/media/v1"
 
+	"github.com/anhvanhoa/service-core/domain/goid"
 	"github.com/anhvanhoa/service-core/domain/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-// MediaServiceServer implements the gRPC media service
 type MediaServiceServer struct {
 	media.UnimplementedMediaServiceServer
 	mediaUsecases *usecase.MediaUsecases
 	logger        *log.LogGRPCImpl
+	uuid          goid.GoUUID
 }
 
-// NewMediaServiceServer creates a new media service server
 func NewMediaServiceServer(mediaUsecases *usecase.MediaUsecases, logger *log.LogGRPCImpl) *MediaServiceServer {
+	uuid := goid.NewGoId().UUID()
 	return &MediaServiceServer{
 		mediaUsecases: mediaUsecases,
 		logger:        logger,
+		uuid:          uuid,
 	}
 }
 
-func (s *MediaServiceServer) UploadMedia(stream media.MediaService_UploadMediaServer) error {
-	var req *media.UploadMediaRequest
-	var fileData []byte
+func (s *MediaServiceServer) UploadMediaStream(stream media.MediaService_UploadMediaStreamServer) error {
+	var info *media.UploadMediaStreamRequest
+	tmpFile, err := os.CreateTemp("", "stream-upload-*")
+	if err != nil {
+		return status.Errorf(codes.Internal, "cannot create temp file: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
 
 	for {
 		chunk, err := stream.Recv()
@@ -42,40 +50,40 @@ func (s *MediaServiceServer) UploadMedia(stream media.MediaService_UploadMediaSe
 			break
 		}
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("Failed to receive chunk: %v", err))
 			return status.Errorf(codes.Internal, "failed to receive chunk: %v", err)
 		}
 
 		if chunk.GetInfo() != nil {
-			req = chunk.GetInfo()
+			info = chunk.GetInfo()
 		}
-		if chunk.GetChunk() != nil {
-			fileData = append(fileData, chunk.GetChunk()...)
+		if data := chunk.GetChunk(); data != nil {
+			if _, err := tmpFile.Write(data); err != nil {
+				return status.Errorf(codes.Internal, "failed to write chunk: %v", err)
+			}
 		}
 	}
 
-	if req == nil {
+	if info == nil {
 		return status.Errorf(codes.InvalidArgument, "missing upload info")
 	}
 
-	// Create upload request
-	uploadReq := &usecase.UploadMediaRequest{
-		FileName:  req.FileName,
-		FileData:  strings.NewReader(string(fileData)),
-		FileSize:  int64(len(fileData)),
-		MimeType:  req.MimeType,
-		CreatedBy: req.CreatedBy,
-		Metadata:  req.Metadata,
+	_, _ = tmpFile.Seek(0, 0)
+
+	id := s.uuid.Gen()
+	uploadReq := &usecase.UploadMediaStreamRequest{
+		ID:        id,
+		FileName:  info.FileName,
+		CreatedBy: info.CreatedBy,
+		Metadata:  info.Metadata,
+		FileData:  tmpFile,
 	}
 
-	// Upload media
-	result, err := s.mediaUsecases.UploadMedia(stream.Context(), uploadReq)
+	result, err := s.mediaUsecases.UploadMediaStream(stream.Context(), uploadReq)
 	if err != nil {
-		s.logger.Error(fmt.Sprintf("Failed to upload media: %v", err))
+		s.logger.Error(fmt.Sprintf("Failed to upload media via stream: %v", err))
 		return status.Errorf(codes.Internal, "failed to upload media: %v", err)
 	}
 
-	// Send response
 	response := &media.UploadMediaResponse{
 		Media: s.entityToProto(result),
 	}
@@ -226,13 +234,13 @@ func (s *MediaServiceServer) entityToProto(entity *entity.Media) *media.Media {
 	}
 
 	if entity.Width != nil {
-		proto.Width = *entity.Width
+		proto.Width = int32(*entity.Width)
 	}
 	if entity.Height != nil {
-		proto.Height = *entity.Height
+		proto.Height = int32(*entity.Height)
 	}
 	if entity.Duration != nil {
-		proto.Duration = *entity.Duration
+		proto.Duration = int32(*entity.Duration)
 	}
 
 	return proto

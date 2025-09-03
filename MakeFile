@@ -14,8 +14,8 @@ BINARY_UNIX=$(BINARY_NAME)_unix
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=media_service_dev
+DB_PASSWORD=123456
+DB_NAME=media_service_db
 DB_URL=postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
 
 # Migration parameters
@@ -92,6 +92,18 @@ dev-setup: dev-create-db migrate-up
 dev-reset: dev-drop-db dev-create-db migrate-up
 	@echo "Development environment reset complete"
 
+dev-docker-drop-db:
+	docker exec -it postgres_container dropdb --force -U postgres media_service_db
+
+dev-docker-create-db:
+	docker exec -it postgres_container createdb -U postgres media_service_db
+
+dev-drop-db:
+	dropdb --force -U postgres media_service_db
+
+dev-create-db:
+	createdb -U postgres media_service_db
+
 # Docker operations (optional)
 docker-build:
 	docker build -t $(BINARY_NAME) .
@@ -121,6 +133,9 @@ run-prod:
 	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd && \
 	CONFIG_FILE=prod.config.yaml ./bin/$(BINARY_NAME)
 
+run-proto:
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/media/v1/media.proto
+
 # Help
 help:
 	@echo "Available commands:"
@@ -137,3 +152,8 @@ help:
 	@echo "  dev-reset   - Reset development environment"
 	@echo "  lint        - Run linter"
 	@echo "  fmt         - Format code"
+	@echo "  dev-docker-drop-db - Drop database in docker"
+	@echo "  dev-docker-create-db - Create database in docker"
+	@echo "  dev-drop-db - Drop database"
+	@echo "  dev-create-db - Create database"
+	@echo "  run-proto   - Run proto"
