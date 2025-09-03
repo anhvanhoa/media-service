@@ -38,23 +38,23 @@ func NewApp() *App {
 	logger := log.InitLogGRPC(logConfig, zapcore.DebugLevel, env.IsProduction())
 
 	db := db.NewPostgresDB(db.ConfigDB{
-		URL:  env.URL_DB,
-		Mode: env.NODE_ENV,
+		URL:  env.UrlDb,
+		Mode: env.NodeEnv,
 	})
 
 	queueClient := queue.NewQueueClient(queue.NewDefaultConfig(
-		env.QUEUE.ADDR,
-		env.QUEUE.NETWORK,
-		env.QUEUE.PASSWORD,
-		env.QUEUE.DB,
-		time.Duration(env.QUEUE.TIMEOUT),
+		env.Queue.Addr,
+		env.Queue.Network,
+		env.Queue.Password,
+		env.Queue.Db,
+		time.Duration(env.Queue.Timeout),
 		nil,
-		env.QUEUE.RETRY,
+		env.Queue.Retry,
 	))
 	mediaRepo := repo.NewMediaRepository(db)
 
 	storageService := storage.NewLocalStorageService(
-		env.STORAGE_LOCAL.UPLOAD_DIR,
+		env.StorageLocal.UploadDir,
 		logger,
 	)
 
@@ -87,8 +87,8 @@ func NewApp() *App {
 func (app *App) Start() *grpc_server.GRPCServer {
 	config := &grpc_server.GRPCServerConfig{
 		IsProduction: app.Env.IsProduction(),
-		PortGRPC:     app.Env.PORT_GRPC,
-		NameService:  app.Env.NAME_SERVICE,
+		PortGRPC:     app.Env.PortGrpc,
+		NameService:  app.Env.NameService,
 	}
 	return grpc_server.NewGRPCServer(
 		config,
