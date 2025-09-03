@@ -11,7 +11,7 @@ import (
 	"media-service/domain/usecase"
 	"strings"
 
-	"media-service/proto/media/v1"
+	"github.com/anhvanhoa/sf-proto/gen/media/v1"
 
 	"github.com/anhvanhoa/service-core/domain/goid"
 	"github.com/anhvanhoa/service-core/domain/log"
@@ -22,12 +22,12 @@ import (
 
 type MediaServiceServer struct {
 	media.UnimplementedMediaServiceServer
-	mediaUsecases *usecase.MediaUsecases
+	mediaUsecases usecase.MediaUsecaseInterfaces
 	logger        *log.LogGRPCImpl
 	uuid          goid.GoUUID
 }
 
-func NewMediaServiceServer(mediaUsecases *usecase.MediaUsecases, logger *log.LogGRPCImpl) *MediaServiceServer {
+func NewMediaServiceServer(mediaUsecases usecase.MediaUsecaseInterfaces, logger *log.LogGRPCImpl) *MediaServiceServer {
 	uuid := goid.NewGoId().UUID()
 	return &MediaServiceServer{
 		mediaUsecases: mediaUsecases,
@@ -213,41 +213,6 @@ func (s *MediaServiceServer) DeleteMedia(ctx context.Context, req *media.DeleteM
 	}, nil
 }
 
-func (s *MediaServiceServer) GetMediaVariants(ctx context.Context, req *media.GetMediaVariantsRequest) (*media.GetMediaVariantsResponse, error) {
-	variants, err := s.mediaUsecases.GetVariants(ctx, req.MediaId)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("Failed to get media variants: %v", err))
-		if strings.Contains(err.Error(), "not found") {
-			return nil, status.Errorf(codes.NotFound, "media not found")
-		}
-		return nil, status.Errorf(codes.Internal, "failed to get media variants: %v", err)
-	}
-
-	protoVariants := make([]*media.MediaVariant, len(variants))
-	for i, variant := range variants {
-		protoVariants[i] = s.variantEntityToProto(variant)
-	}
-
-	return &media.GetMediaVariantsResponse{
-		Variants: protoVariants,
-	}, nil
-}
-
-func (s *MediaServiceServer) ProcessMedia(ctx context.Context, req *media.ProcessMediaRequest) (*media.ProcessMediaResponse, error) {
-	err := s.mediaUsecases.ProcessMedia(ctx, req.MediaId)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("Failed to process media: %v", err))
-		if strings.Contains(err.Error(), "not found") {
-			return nil, status.Errorf(codes.NotFound, "media not found")
-		}
-		return nil, status.Errorf(codes.Internal, "failed to process media: %v", err)
-	}
-
-	return &media.ProcessMediaResponse{
-		Success: true,
-	}, nil
-}
-
 func (s *MediaServiceServer) entityToProto(entity *entity.Media) *media.Media {
 	proto := &media.Media{
 		Id:               entity.ID,
@@ -271,31 +236,6 @@ func (s *MediaServiceServer) entityToProto(entity *entity.Media) *media.Media {
 	}
 	if entity.Duration != nil {
 		proto.Duration = int32(*entity.Duration)
-	}
-
-	return proto
-}
-
-func (s *MediaServiceServer) variantEntityToProto(entity *entity.MediaVariant) *media.MediaVariant {
-	proto := &media.MediaVariant{
-		Id:        entity.ID,
-		MediaId:   entity.MediaID,
-		Type:      entity.Type,
-		Size:      entity.Size,
-		Url:       entity.URL,
-		FileSize:  entity.FileSize,
-		Format:    entity.Format,
-		CreatedAt: timestamppb.New(entity.CreatedAt),
-	}
-
-	if entity.Width != nil {
-		proto.Width = *entity.Width
-	}
-	if entity.Height != nil {
-		proto.Height = *entity.Height
-	}
-	if entity.Quality != nil {
-		proto.Quality = *entity.Quality
 	}
 
 	return proto

@@ -4,8 +4,9 @@ import (
 	"media-service/domain/usecase"
 	"media-service/infrastructure/grpc_service"
 	"media-service/infrastructure/repo"
-	"media-service/proto/media/v1"
 	"time"
+
+	"github.com/anhvanhoa/sf-proto/gen/media/v1"
 
 	"github.com/anhvanhoa/service-core/bootstrap/db"
 	grpc_server "github.com/anhvanhoa/service-core/bootstrap/grpc"
@@ -18,14 +19,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-// App represents the application with all its dependencies
 type App struct {
 	Env           *Env
 	DB            *pg.DB
 	Logger        *log.LogGRPCImpl
 	GRPCServer    *grpc.Server
 	QueueClient   queue.QueueClient
-	MediaUsecases *usecase.MediaUsecases
+	MediaUsecases usecase.MediaUsecaseInterfaces
 	Storage       storage.StorageI
 	MediaServer   media.MediaServiceServer
 }
@@ -37,7 +37,6 @@ func NewApp() *App {
 	logConfig := log.NewConfig()
 	logger := log.InitLogGRPC(logConfig, zapcore.DebugLevel, env.IsProduction())
 
-	// Initialize database
 	db := db.NewPostgresDB(db.ConfigDB{
 		URL:  env.URL_DB,
 		Mode: env.NODE_ENV,
@@ -53,7 +52,6 @@ func NewApp() *App {
 		env.QUEUE.RETRY,
 	))
 	mediaRepo := repo.NewMediaRepository(db)
-	variantRepo := repo.NewMediaVariantRepository(db)
 
 	storageService := storage.NewLocalStorageService(
 		env.STORAGE_LOCAL.UPLOAD_DIR,
@@ -68,7 +66,6 @@ func NewApp() *App {
 
 	mediaUsecases := usecase.NewMediaUsecases(
 		mediaRepo,
-		variantRepo,
 		logger,
 		processingService,
 		storageService,

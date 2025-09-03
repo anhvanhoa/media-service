@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	pb "media-service/proto/media/v1"
+	pb "github.com/anhvanhoa/sf-proto/gen/media/v1"
 
 	"google.golang.org/grpc"
 )
