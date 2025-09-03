@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"io"
 	"media-service/domain/entity"
 	"media-service/domain/repository"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/anhvanhoa/service-core/domain/log"
 	"github.com/anhvanhoa/service-core/domain/processing"
 	"github.com/anhvanhoa/service-core/domain/storage"
+	"github.com/anhvanhoa/service-core/utils"
 )
 
 type UploadMediaUsecase struct {
@@ -39,11 +39,13 @@ func NewUploadMediaUsecase(
 }
 
 func (uc *UploadMediaUsecase) Execute(ctx context.Context, req *UploadMediaRequest) (*entity.Media, error) {
-
-	url, err := uc.uploadToStorage(ctx, req)
+	file, err := uc.processing.CreateFileFromReader(req.FileData)
 	if err != nil {
-		return nil, fmt.Errorf("storage upload failed: %w", err)
+		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
+	defer file.Close()
+	defer uc.processing.DeleteFile(file.Name())
+	req.FileData = file
 
 	var (
 		width, height int
@@ -56,7 +58,13 @@ func (uc *UploadMediaUsecase) Execute(ctx context.Context, req *UploadMediaReque
 	} else {
 		width = meta.Width
 		height = meta.Height
-		duration = meta.Duration
+		req.Ext = entity.ExtWebP
+	}
+
+	uc.processing.ResetReader(file)
+	url, err := uc.uploadToStorage(ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("storage upload failed: %w", err)
 	}
 
 	media := uc.createMediaEntity(req, url, string(entity.MimeTypeWebP), width, height, duration)
@@ -71,14 +79,11 @@ func (uc *UploadMediaUsecase) Execute(ctx context.Context, req *UploadMediaReque
 }
 
 func (uc *UploadMediaUsecase) uploadToStorage(ctx context.Context, req *UploadMediaRequest) (string, error) {
-	imageBytes, err := io.ReadAll(req.FileData)
-	if err != nil {
-		uc.logger.Error(fmt.Sprintf("Failed to convert reader to bytes: %v", err))
-		return "", err
+	if req.FileName == "" {
+		req.FileName = req.ID
 	}
-
-	uc.logger.Info(fmt.Sprintf("Read %d bytes from file", len(imageBytes)))
-	return uc.processing.ConvertWebPBufferToFile(ctx, imageBytes, req.OutputFile)
+	outFile := utils.ConvertToSlug(req.FileName) + req.Ext
+	return uc.processing.ConvertWebPBufferToFile(ctx, req.FileData, outFile)
 }
 
 func (uc *UploadMediaUsecase) createMediaEntity(
@@ -91,12 +96,12 @@ func (uc *UploadMediaUsecase) createMediaEntity(
 ) *entity.Media {
 	media := &entity.Media{
 		ID:               req.ID,
-		Name:             req.Name,
+		Name:             req.FileName,
 		Size:             req.Size,
 		URL:              url,
 		MimeType:         mimeType,
 		Type:             req.Type,
-		ProcessingStatus: entity.ProcessingStatusPending,
+		ProcessingStatus: entity.ProcessingStatusCompleted,
 		CreatedBy:        req.CreatedBy,
 		Width:            &width,
 		Height:           &height,
@@ -105,7 +110,6 @@ func (uc *UploadMediaUsecase) createMediaEntity(
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 	}
-
 	return media
 }
 

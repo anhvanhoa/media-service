@@ -36,7 +36,7 @@ func main() {
 
 func uploadMediaStream(client pb.MediaServiceClient, ctx context.Context) {
 	// Mở file để upload
-	filePath := "C:/uploads/i.jpg"
+	filePath := "C:/uploads/a.jpg"
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Không mở được file: %v", err)
@@ -52,7 +52,6 @@ func uploadMediaStream(client pb.MediaServiceClient, ctx context.Context) {
 	info := &pb.UploadMediaChunk{
 		Data: &pb.UploadMediaChunk_Info{
 			Info: &pb.UploadMediaStreamRequest{
-				FileName:  "test.jpg",
 				CreatedBy: "user123",
 				Metadata:  map[string]string{"tag": "demo"},
 			},
@@ -92,9 +91,8 @@ func uploadMediaStream(client pb.MediaServiceClient, ctx context.Context) {
 }
 
 func uploadMedia(client pb.MediaServiceClient, ctx context.Context) {
-
 	// Mở file để upload
-	filePath := "C:/uploads/a.jpg"
+	filePath := "C:/uploads/i.jpg"
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Không mở được file: %v", err)
@@ -106,7 +104,7 @@ func uploadMedia(client pb.MediaServiceClient, ctx context.Context) {
 		log.Fatalf("Lỗi đọc file: %v", err)
 	}
 	res, err := client.UploadMedia(ctx, &pb.UploadMediaRequest{
-		FileName:  "test.jpg",
+		FileName:  "Xin chào",
 		CreatedBy: "user123",
 		Metadata:  map[string]string{"tag": "demo"},
 		FileData:  fileData,

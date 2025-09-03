@@ -98,12 +98,6 @@ dev-docker-drop-db:
 dev-docker-create-db:
 	docker exec -it postgres_container createdb -U postgres media_service_db
 
-dev-drop-db:
-	dropdb --force -U postgres media_service_db
-
-dev-create-db:
-	createdb -U postgres media_service_db
-
 # Docker operations (optional)
 docker-build:
 	docker build -t $(BINARY_NAME) .

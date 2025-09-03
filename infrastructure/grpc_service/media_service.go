@@ -1,6 +1,7 @@
 package grpc_service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -69,6 +70,11 @@ func (s *MediaServiceServer) UploadMediaStream(stream media.MediaService_UploadM
 
 	_, _ = tmpFile.Seek(0, 0)
 
+	infoFile, err := tmpFile.Stat()
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to get file info: %v", err)
+	}
+
 	id := s.uuid.Gen()
 	uploadReq := &usecase.UploadMediaStreamRequest{
 		ID:        id,
@@ -76,6 +82,7 @@ func (s *MediaServiceServer) UploadMediaStream(stream media.MediaService_UploadM
 		CreatedBy: info.CreatedBy,
 		Metadata:  info.Metadata,
 		FileData:  tmpFile,
+		FileSize:  infoFile.Size(),
 	}
 
 	result, err := s.mediaUsecases.UploadMediaStream(stream.Context(), uploadReq)
@@ -89,6 +96,29 @@ func (s *MediaServiceServer) UploadMediaStream(stream media.MediaService_UploadM
 	}
 
 	return stream.SendAndClose(response)
+}
+
+func (s *MediaServiceServer) UploadMedia(ctx context.Context, req *media.UploadMediaRequest) (*media.UploadMediaResponse, error) {
+	id := s.uuid.Gen()
+	uploadReq := &usecase.UploadMediaRequest{
+		ID:        id,
+		FileName:  req.FileName,
+		CreatedBy: req.CreatedBy,
+		Metadata:  req.Metadata,
+		FileData:  bytes.NewReader(req.FileData),
+		Type:      entity.MediaTypeImage,
+		Size:      int64(len(req.FileData)),
+	}
+
+	result, err := s.mediaUsecases.UploadMedia(ctx, uploadReq)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to upload media: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to upload media: %v", err)
+	}
+
+	return &media.UploadMediaResponse{
+		Media: s.entityToProto(result),
+	}, nil
 }
 
 func (s *MediaServiceServer) GetMedia(ctx context.Context, req *media.GetMediaRequest) (*media.GetMediaResponse, error) {

@@ -3,7 +3,7 @@ module media-service
 go 1.24.6
 
 require (
-	github.com/anhvanhoa/service-core v0.0.0-20250831200512-328ba9701290
+	github.com/anhvanhoa/service-core v0.0.0-20250903033254-16d20b840cca
 	github.com/go-pg/pg/v10 v10.15.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.75.0

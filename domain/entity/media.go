@@ -27,6 +27,16 @@ const (
 	MimeTypeOther MimeType = "application/octet-stream"
 )
 
+const (
+	ExtWebP  = ".webp"
+	ExtJPEG  = ".jpeg"
+	ExtPNG   = ".png"
+	ExtGIF   = ".gif"
+	ExtMP4   = ".mp4"
+	ExtAudio = ".mp3"
+	ExtOther = ".other"
+)
+
 // ProcessingStatus represents the processing status of media
 type ProcessingStatus string
 

@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"media-service/domain/entity"
 	"media-service/domain/repository"
 
@@ -106,7 +105,6 @@ func NewMediaUsecases(
 
 // Implementation of MediaUsecaseInterfaces
 func (m *MediaUsecases) UploadMedia(ctx context.Context, req *UploadMediaRequest) (*entity.Media, error) {
-	fmt.Println("UploadMedia (legacy)", req)
 	return m.UploadUC.Execute(ctx, req)
 }
 
