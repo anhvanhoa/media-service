@@ -27,7 +27,16 @@ const (
 	MimeTypeOther MimeType = "application/octet-stream"
 )
 
-// ProcessingStatus represents the processing status of media
+const (
+	ExtWebP  = ".webp"
+	ExtJPEG  = ".jpeg"
+	ExtPNG   = ".png"
+	ExtGIF   = ".gif"
+	ExtMP4   = ".mp4"
+	ExtAudio = ".mp3"
+	ExtOther = ".other"
+)
+
 type ProcessingStatus string
 
 const (
@@ -37,7 +46,6 @@ const (
 	ProcessingStatusFailed     ProcessingStatus = "failed"
 )
 
-// Media represents a media file entity
 type Media struct {
 	ID               string            `json:"id" pg:"id,pk"`
 	CreatedBy        string            `json:"created_by" pg:"created_by"`
@@ -54,23 +62,6 @@ type Media struct {
 	CreatedAt        time.Time         `json:"created_at" pg:"created_at,default:now()"`
 	UpdatedAt        time.Time         `json:"updated_at" pg:"updated_at,default:now()"`
 }
-
-// MediaVariant represents different variants of a media file (thumbnails, different formats, etc.)
-type MediaVariant struct {
-	ID        string    `json:"id" pg:"id,pk"`
-	MediaID   string    `json:"media_id" pg:"media_id,notnull"`
-	Type      string    `json:"type" pg:"type"` // thumbnail, webp, mp4, etc.
-	Size      string    `json:"size" pg:"size"` // small, medium, large for thumbnails
-	URL       string    `json:"url" pg:"url"`
-	FileSize  int64     `json:"file_size" pg:"file_size"`
-	Width     *int32    `json:"width,omitempty" pg:"width"`
-	Height    *int32    `json:"height,omitempty" pg:"height"`
-	Quality   *int32    `json:"quality,omitempty" pg:"quality"`
-	Format    string    `json:"format" pg:"format"` // webp, jpeg, mp4, webm
-	CreatedAt time.Time `json:"created_at" pg:"created_at,default:now()"`
-}
-
-// UploadRequest represents a file upload request
 type UploadRequest struct {
 	FileName  string            `json:"file_name"`
 	FileSize  int64             `json:"file_size"`
@@ -79,24 +70,6 @@ type UploadRequest struct {
 	Metadata  map[string]string `json:"metadata,omitempty"`
 }
 
-// ProcessingJob represents a media processing job
-type ProcessingJob struct {
-	ID        string           `json:"id"`
-	MediaID   string           `json:"media_id"`
-	JobType   string           `json:"job_type"` // resize, convert, thumbnail, etc.
-	Status    ProcessingStatus `json:"status"`
-	Progress  int32            `json:"progress"` // 0-100
-	Error     string           `json:"error,omitempty"`
-	CreatedAt time.Time        `json:"created_at"`
-	UpdatedAt time.Time        `json:"updated_at"`
-}
-
-// TableName returns the table name for Media
 func (Media) TableName() string {
 	return "media"
-}
-
-// TableName returns the table name for MediaVariant
-func (MediaVariant) TableName() string {
-	return "media_variants"
 }

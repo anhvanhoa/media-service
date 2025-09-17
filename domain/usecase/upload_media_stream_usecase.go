@@ -13,6 +13,7 @@ import (
 	"github.com/anhvanhoa/service-core/domain/log"
 	"github.com/anhvanhoa/service-core/domain/processing"
 	"github.com/anhvanhoa/service-core/domain/storage"
+	"github.com/anhvanhoa/service-core/utils"
 )
 
 type UploadMediaStreamUsecase struct {
@@ -46,39 +47,26 @@ type UploadMediaStreamRequest struct {
 	Metadata  map[string]string
 	FileData  io.Reader
 	FileSize  int64
+	Ext       string
 }
 
 func (uc *UploadMediaStreamUsecase) Execute(ctx context.Context, req *UploadMediaStreamRequest) (*entity.Media, error) {
-	uc.logger.Info(fmt.Sprintf("Starting streaming media upload: %s", req.FileName))
-
-	tmpFile, err := uc.createTempFile()
+	file, err := uc.processing.CreateFileFromReader(nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create temp file: %w", err)
+		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
-	defer uc.cleanupTempFile(tmpFile)
+	defer file.Close()
+	defer uc.processing.DeleteFile(file.Name())
 
-	bytesWritten, err := uc.bufferStreamToFile(req.FileData, tmpFile)
+	bytesWritten, err := uc.bufferStreamToFile(req.FileData, file)
 	if err != nil {
 		return nil, fmt.Errorf("failed to buffer stream: %w", err)
 	}
-	uc.logger.Info(fmt.Sprintf("Buffered %d bytes from stream", bytesWritten))
 
 	if req.FileSize > 0 && bytesWritten != req.FileSize {
 		uc.logger.Warn(fmt.Sprintf("Expected %d bytes but received %d bytes", req.FileSize, bytesWritten))
 	}
-
-	if err := uc.resetFilePointer(tmpFile); err != nil {
-		return nil, fmt.Errorf("failed to reset file pointer: %w", err)
-	}
-
-	url, err := uc.uploadToStorage(ctx, req, tmpFile)
-	if err != nil {
-		uc.logger.Error(fmt.Sprintf("Failed to upload to storage: %v", err))
-		return nil, fmt.Errorf("storage upload failed: %w", err)
-	}
-	uc.logger.Info(fmt.Sprintf("File uploaded to storage: %s", url))
-
-	if err := uc.resetFilePointer(tmpFile); err != nil {
+	if err := uc.resetFilePointer(file); err != nil {
 		return nil, fmt.Errorf("failed to reset file pointer: %w", err)
 	}
 
@@ -87,12 +75,11 @@ func (uc *UploadMediaStreamUsecase) Execute(ctx context.Context, req *UploadMedi
 		duration      float64
 	)
 
-	meta, err := uc.processing.ExtractImageMetadata(ctx, tmpFile)
+	meta, err := uc.processing.ExtractImageMetadata(ctx, file)
 	if err != nil {
 		uc.logger.Warn(fmt.Sprintf("Could not extract metadata, using defaults: %v", err))
 		return nil, fmt.Errorf("could not extract metadata: %w", err)
 	} else {
-		uc.logger.Info(fmt.Sprintf("Extracted metadata: %v", meta))
 		width = meta.Width
 		height = meta.Height
 	}
@@ -115,22 +102,6 @@ func (uc *UploadMediaStreamUsecase) Execute(ctx context.Context, req *UploadMedi
 
 	uc.logger.Info(fmt.Sprintf("Streaming media upload completed successfully: %s", req.ID))
 	return media, nil
-}
-
-func (uc *UploadMediaStreamUsecase) createTempFile() (*os.File, error) {
-	tmpFile, err := os.CreateTemp("", "stream-upload-*")
-	if err != nil {
-		return nil, err
-	}
-	return tmpFile, nil
-}
-
-func (uc *UploadMediaStreamUsecase) cleanupTempFile(tmpFile *os.File) {
-	fileName := tmpFile.Name()
-	tmpFile.Close()
-	if err := os.Remove(fileName); err != nil {
-		uc.logger.Warn(fmt.Sprintf("Failed to cleanup temp file %s: %v", fileName, err))
-	}
 }
 
 func (uc *UploadMediaStreamUsecase) bufferStreamToFile(reader io.Reader, tmpFile *os.File) (int64, error) {
@@ -158,8 +129,10 @@ func (uc *UploadMediaStreamUsecase) bufferStreamToFile(reader io.Reader, tmpFile
 }
 
 func (uc *UploadMediaStreamUsecase) uploadToStorage(ctx context.Context, req *UploadMediaStreamRequest, tmpFile *os.File) (string, error) {
-	outputFile := fmt.Sprintf("%s.webp", req.ID)
-	uc.logger.Info(fmt.Sprintf("Converting and uploading to %s", outputFile))
+	if req.FileName == "" {
+		req.FileName = req.ID
+	}
+	outputFile := utils.ConvertToSlug(req.FileName) + req.Ext
 	return uc.processing.ConvertWebPBufferToFile(ctx, tmpFile, outputFile)
 }
 
@@ -188,7 +161,6 @@ func (uc *UploadMediaStreamUsecase) createMediaEntity(
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),
 	}
-
 	return media
 }
 

@@ -11,7 +11,7 @@ import (
 	"media-service/domain/usecase"
 	"strings"
 
-	"media-service/proto/media/v1"
+	"github.com/anhvanhoa/sf-proto/gen/media/v1"
 
 	"github.com/anhvanhoa/service-core/domain/goid"
 	"github.com/anhvanhoa/service-core/domain/log"
@@ -21,13 +21,13 @@ import (
 )
 
 type MediaServiceServer struct {
-	media.UnsafeMediaServiceServer
-	mediaUsecases *usecase.MediaUsecases
+	media.UnimplementedMediaServiceServer
+	mediaUsecases usecase.MediaUsecaseInterfaces
 	logger        *log.LogGRPCImpl
 	uuid          goid.GoUUID
 }
 
-func NewMediaServiceServer(mediaUsecases *usecase.MediaUsecases, logger *log.LogGRPCImpl) media.MediaServiceServer {
+func NewMediaServiceServer(mediaUsecases usecase.MediaUsecaseInterfaces, logger *log.LogGRPCImpl) *MediaServiceServer {
 	uuid := goid.NewGoId().UUID()
 	return &MediaServiceServer{
 		mediaUsecases: mediaUsecases,
@@ -88,6 +88,11 @@ func (s *MediaServiceServer) UploadMediaStream(stream media.MediaService_UploadM
 
 	_, _ = tmpFile.Seek(0, 0)
 
+	infoFile, err := tmpFile.Stat()
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to get file info: %v", err)
+	}
+
 	id := s.uuid.Gen()
 	uploadReq := &usecase.UploadMediaStreamRequest{
 		ID:        id,
@@ -95,6 +100,7 @@ func (s *MediaServiceServer) UploadMediaStream(stream media.MediaService_UploadM
 		CreatedBy: info.CreatedBy,
 		Metadata:  info.Metadata,
 		FileData:  tmpFile,
+		FileSize:  infoFile.Size(),
 	}
 
 	result, err := s.mediaUsecases.UploadMediaStream(stream.Context(), uploadReq)
@@ -108,6 +114,29 @@ func (s *MediaServiceServer) UploadMediaStream(stream media.MediaService_UploadM
 	}
 
 	return stream.SendAndClose(response)
+}
+
+func (s *MediaServiceServer) UploadMedia(ctx context.Context, req *media.UploadMediaRequest) (*media.UploadMediaResponse, error) {
+	id := s.uuid.Gen()
+	uploadReq := &usecase.UploadMediaRequest{
+		ID:        id,
+		FileName:  req.FileName,
+		CreatedBy: req.CreatedBy,
+		Metadata:  req.Metadata,
+		FileData:  bytes.NewReader(req.FileData),
+		Type:      entity.MediaTypeImage,
+		Size:      int64(len(req.FileData)),
+	}
+
+	result, err := s.mediaUsecases.UploadMedia(ctx, uploadReq)
+	if err != nil {
+		s.logger.Error(fmt.Sprintf("Failed to upload media: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to upload media: %v", err)
+	}
+
+	return &media.UploadMediaResponse{
+		Media: s.entityToProto(result),
+	}, nil
 }
 
 func (s *MediaServiceServer) GetMedia(ctx context.Context, req *media.GetMediaRequest) (*media.GetMediaResponse, error) {
@@ -202,41 +231,6 @@ func (s *MediaServiceServer) DeleteMedia(ctx context.Context, req *media.DeleteM
 	}, nil
 }
 
-func (s *MediaServiceServer) GetMediaVariants(ctx context.Context, req *media.GetMediaVariantsRequest) (*media.GetMediaVariantsResponse, error) {
-	variants, err := s.mediaUsecases.GetVariants(ctx, req.MediaId)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("Failed to get media variants: %v", err))
-		if strings.Contains(err.Error(), "not found") {
-			return nil, status.Errorf(codes.NotFound, "media not found")
-		}
-		return nil, status.Errorf(codes.Internal, "failed to get media variants: %v", err)
-	}
-
-	protoVariants := make([]*media.MediaVariant, len(variants))
-	for i, variant := range variants {
-		protoVariants[i] = s.variantEntityToProto(variant)
-	}
-
-	return &media.GetMediaVariantsResponse{
-		Variants: protoVariants,
-	}, nil
-}
-
-func (s *MediaServiceServer) ProcessMedia(ctx context.Context, req *media.ProcessMediaRequest) (*media.ProcessMediaResponse, error) {
-	err := s.mediaUsecases.ProcessMedia(ctx, req.MediaId)
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("Failed to process media: %v", err))
-		if strings.Contains(err.Error(), "not found") {
-			return nil, status.Errorf(codes.NotFound, "media not found")
-		}
-		return nil, status.Errorf(codes.Internal, "failed to process media: %v", err)
-	}
-
-	return &media.ProcessMediaResponse{
-		Success: true,
-	}, nil
-}
-
 func (s *MediaServiceServer) entityToProto(entity *entity.Media) *media.Media {
 	proto := &media.Media{
 		Id:               entity.ID,
@@ -260,31 +254,6 @@ func (s *MediaServiceServer) entityToProto(entity *entity.Media) *media.Media {
 	}
 	if entity.Duration != nil {
 		proto.Duration = int32(*entity.Duration)
-	}
-
-	return proto
-}
-
-func (s *MediaServiceServer) variantEntityToProto(entity *entity.MediaVariant) *media.MediaVariant {
-	proto := &media.MediaVariant{
-		Id:        entity.ID,
-		MediaId:   entity.MediaID,
-		Type:      entity.Type,
-		Size:      entity.Size,
-		Url:       entity.URL,
-		FileSize:  entity.FileSize,
-		Format:    entity.Format,
-		CreatedAt: timestamppb.New(entity.CreatedAt),
-	}
-
-	if entity.Width != nil {
-		proto.Width = *entity.Width
-	}
-	if entity.Height != nil {
-		proto.Height = *entity.Height
-	}
-	if entity.Quality != nil {
-		proto.Quality = *entity.Quality
 	}
 
 	return proto

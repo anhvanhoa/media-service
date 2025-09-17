@@ -11,21 +11,18 @@ import (
 
 // DeleteMediaUsecase handles deleting media files
 type DeleteMediaUsecase struct {
-	mediaRepo   repository.MediaRepository
-	variantRepo repository.MediaVariantRepository
-	logger      *log.LogGRPCImpl
+	mediaRepo repository.MediaRepository
+	logger    *log.LogGRPCImpl
 }
 
 // NewDeleteMediaUsecase creates a new delete media usecase
 func NewDeleteMediaUsecase(
 	mediaRepo repository.MediaRepository,
-	variantRepo repository.MediaVariantRepository,
 	logger *log.LogGRPCImpl,
 ) *DeleteMediaUsecase {
 	return &DeleteMediaUsecase{
-		mediaRepo:   mediaRepo,
-		variantRepo: variantRepo,
-		logger:      logger,
+		mediaRepo: mediaRepo,
+		logger:    logger,
 	}
 }
 
@@ -50,12 +47,6 @@ func (uc *DeleteMediaUsecase) Execute(ctx context.Context, mediaID, createdBy st
 	if err := uc.checkOwnership(existingMedia, createdBy); err != nil {
 		uc.logger.Error(fmt.Sprintf("Ownership check failed: %v", err))
 		return fmt.Errorf("unauthorized: %w", err)
-	}
-
-	// Step 4: Delete media variants
-	if err := uc.deleteMediaVariants(ctx, mediaID); err != nil {
-		uc.logger.Warn(fmt.Sprintf("Failed to delete media variants: %v", err))
-		// Continue with main file deletion even if variants fail
 	}
 
 	// Step 5: Delete main media file from storage
@@ -106,32 +97,6 @@ func (uc *DeleteMediaUsecase) checkOwnership(media *entity.Media, createdBy stri
 	if media.CreatedBy != createdBy {
 		return fmt.Errorf("user %s does not own media %s", createdBy, media.ID)
 	}
-	return nil
-}
-
-// Step 4: Delete media variants
-func (uc *DeleteMediaUsecase) deleteMediaVariants(ctx context.Context, mediaID string) error {
-	// Get all variants for this media
-	variants, err := uc.variantRepo.GetByMediaID(ctx, mediaID)
-	if err != nil {
-		return fmt.Errorf("failed to get variants: %w", err)
-	}
-
-	// Delete each variant file from storage
-	for _, variant := range variants {
-		fmt.Println("Đang xóa variant: ", variant.ID, " - ", "Chưa có xử lý")
-		// if err := uc.storageService.Delete(ctx, variant.URL); err != nil {
-		// 	uc.logger.Warn(fmt.Sprintf("Failed to delete variant file from storage: %v", err))
-		// }
-	}
-
-	// Delete variant records from database
-	if err := uc.variantRepo.DeleteByMediaID(ctx, mediaID); err != nil {
-		return fmt.Errorf("failed to delete variant records: %w", err)
-	}
-
-	uc.logger.Debug(fmt.Sprintf("Deleted media variants: %s", mediaID))
-
 	return nil
 }
 

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	pb "media-service/proto/media/v1"
+	pb "github.com/anhvanhoa/sf-proto/gen/media/v1"
 
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"

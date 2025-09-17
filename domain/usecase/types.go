@@ -7,14 +7,14 @@ import (
 
 // UploadMediaRequest represents an upload request
 type UploadMediaRequest struct {
-	ID         string
-	Name       string
-	Size       int64
-	Type       entity.MediaType
-	FileData   io.Reader
-	OutputFile string
-	CreatedBy  string
-	Metadata   map[string]string
+	ID        string
+	FileName  string
+	Size      int64
+	Type      entity.MediaType
+	FileData  io.Reader
+	CreatedBy string
+	Metadata  map[string]string
+	Ext       string
 }
 
 // UpdateMediaRequest represents an update request

@@ -3,8 +3,8 @@ module media-service
 go 1.24.6
 
 require (
-	github.com/anhvanhoa/service-core v0.0.0-20250917141253-79fea82b6746
-	github.com/anhvanhoa/sf-proto v1.1.5
+	github.com/anhvanhoa/service-core v0.0.0-20250903033254-16d20b840cca
+	github.com/anhvanhoa/sf-proto v1.1.6-0.20250903072551-1b0126b7334c
 	github.com/go-pg/pg/v10 v10.15.0
 	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.11.1

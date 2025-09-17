@@ -4,7 +4,9 @@ import (
 	"media-service/domain/usecase"
 	"media-service/infrastructure/grpc_service"
 	"media-service/infrastructure/repo"
-	"media-service/proto/media/v1"
+	"time"
+
+	"github.com/anhvanhoa/sf-proto/gen/media/v1"
 
 	"github.com/anhvanhoa/service-core/bootstrap/db"
 	grpc_server "github.com/anhvanhoa/service-core/bootstrap/grpc"
@@ -17,14 +19,13 @@ import (
 	"google.golang.org/grpc"
 )
 
-// App represents the application with all its dependencies
 type App struct {
 	Env           *Env
 	DB            *pg.DB
 	Logger        *log.LogGRPCImpl
 	GRPCServer    *grpc.Server
 	QueueClient   queue.QueueClient
-	MediaUsecases *usecase.MediaUsecases
+	MediaUsecases usecase.MediaUsecaseInterfaces
 	Storage       storage.StorageI
 	MediaServer   media.MediaServiceServer
 }
@@ -36,25 +37,24 @@ func NewApp() *App {
 	logConfig := log.NewConfig()
 	logger := log.InitLogGRPC(logConfig, zapcore.DebugLevel, env.IsProduction())
 
-	// Initialize database
 	db := db.NewPostgresDB(db.ConfigDB{
-		URL:  env.URL_DB,
-		Mode: env.NODE_ENV,
+		URL:  env.UrlDb,
+		Mode: env.NodeEnv,
 	})
 
 	queueClient := queue.NewQueueClient(queue.NewDefaultConfig(
-		env.QUEUE.ADDR,
-		env.QUEUE.NETWORK,
-		env.QUEUE.PASSWORD,
-		env.QUEUE.DB,
+		env.Queue.Addr,
+		env.Queue.Network,
+		env.Queue.Password,
+		env.Queue.Db,
+		time.Duration(env.Queue.Timeout),
 		nil,
-		env.QUEUE.RETRY,
+		env.Queue.Retry,
 	))
 	mediaRepo := repo.NewMediaRepository(db)
-	variantRepo := repo.NewMediaVariantRepository(db)
 
 	storageService := storage.NewLocalStorageService(
-		env.STORAGE_LOCAL.UPLOAD_DIR,
+		env.StorageLocal.UploadDir,
 		logger,
 	)
 
@@ -66,7 +66,6 @@ func NewApp() *App {
 
 	mediaUsecases := usecase.NewMediaUsecases(
 		mediaRepo,
-		variantRepo,
 		logger,
 		processingService,
 		storageService,
@@ -88,8 +87,8 @@ func NewApp() *App {
 func (app *App) Start() *grpc_server.GRPCServer {
 	config := &grpc_server.GRPCServerConfig{
 		IsProduction: app.Env.IsProduction(),
-		PortGRPC:     app.Env.PORT_GRPC,
-		NameService:  app.Env.NAME_SERVICE,
+		PortGRPC:     app.Env.PortGrpc,
+		NameService:  app.Env.NameService,
 	}
 	return grpc_server.NewGRPCServer(
 		config,
