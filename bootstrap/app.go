@@ -5,7 +5,6 @@ import (
 	"media-service/infrastructure/grpc_service"
 	"media-service/infrastructure/repo"
 	"media-service/proto/media/v1"
-	"time"
 
 	"github.com/anhvanhoa/service-core/bootstrap/db"
 	grpc_server "github.com/anhvanhoa/service-core/bootstrap/grpc"
@@ -48,7 +47,6 @@ func NewApp() *App {
 		env.QUEUE.NETWORK,
 		env.QUEUE.PASSWORD,
 		env.QUEUE.DB,
-		time.Duration(env.QUEUE.TIMEOUT),
 		nil,
 		env.QUEUE.RETRY,
 	))

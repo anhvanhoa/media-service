@@ -3,7 +3,6 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"io"
 	"media-service/domain/entity"
 	"media-service/domain/repository"
 	"time"
@@ -39,7 +38,6 @@ func NewUploadMediaUsecase(
 }
 
 func (uc *UploadMediaUsecase) Execute(ctx context.Context, req *UploadMediaRequest) (*entity.Media, error) {
-
 	url, err := uc.uploadToStorage(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("storage upload failed: %w", err)
@@ -47,7 +45,6 @@ func (uc *UploadMediaUsecase) Execute(ctx context.Context, req *UploadMediaReque
 
 	var (
 		width, height int
-		duration      float64
 	)
 
 	meta, err := uc.processing.ExtractImageMetadata(ctx, req.FileData)
@@ -56,10 +53,9 @@ func (uc *UploadMediaUsecase) Execute(ctx context.Context, req *UploadMediaReque
 	} else {
 		width = meta.Width
 		height = meta.Height
-		duration = meta.Duration
 	}
 
-	media := uc.createMediaEntity(req, url, string(entity.MimeTypeWebP), width, height, duration)
+	media := uc.createMediaEntity(req, url, string(entity.MimeTypeWebP), width, height)
 
 	if err := uc.saveToDatabase(ctx, media); err != nil {
 		_ = uc.storageService.Delete(ctx, url)
@@ -71,14 +67,8 @@ func (uc *UploadMediaUsecase) Execute(ctx context.Context, req *UploadMediaReque
 }
 
 func (uc *UploadMediaUsecase) uploadToStorage(ctx context.Context, req *UploadMediaRequest) (string, error) {
-	imageBytes, err := io.ReadAll(req.FileData)
-	if err != nil {
-		uc.logger.Error(fmt.Sprintf("Failed to convert reader to bytes: %v", err))
-		return "", err
-	}
-
-	uc.logger.Info(fmt.Sprintf("Read %d bytes from file", len(imageBytes)))
-	return uc.processing.ConvertWebPBufferToFile(ctx, imageBytes, req.OutputFile)
+	uc.logger.Info(fmt.Sprintf("Converting and uploading to %s", req.OutputFile))
+	return uc.processing.ConvertWebPBufferToFile(ctx, req.FileData, req.OutputFile)
 }
 
 func (uc *UploadMediaUsecase) createMediaEntity(
@@ -87,7 +77,6 @@ func (uc *UploadMediaUsecase) createMediaEntity(
 	mimeType string,
 	width int,
 	height int,
-	duration float64,
 ) *entity.Media {
 	media := &entity.Media{
 		ID:               req.ID,
@@ -100,7 +89,6 @@ func (uc *UploadMediaUsecase) createMediaEntity(
 		CreatedBy:        req.CreatedBy,
 		Width:            &width,
 		Height:           &height,
-		Duration:         &duration,
 		Metadata:         req.Metadata,
 		CreatedAt:        time.Now(),
 		UpdatedAt:        time.Now(),

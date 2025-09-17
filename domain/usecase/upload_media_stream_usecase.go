@@ -95,7 +95,6 @@ func (uc *UploadMediaStreamUsecase) Execute(ctx context.Context, req *UploadMedi
 		uc.logger.Info(fmt.Sprintf("Extracted metadata: %v", meta))
 		width = meta.Width
 		height = meta.Height
-		duration = meta.Duration
 	}
 
 	media := uc.createMediaEntity(
@@ -159,15 +158,9 @@ func (uc *UploadMediaStreamUsecase) bufferStreamToFile(reader io.Reader, tmpFile
 }
 
 func (uc *UploadMediaStreamUsecase) uploadToStorage(ctx context.Context, req *UploadMediaStreamRequest, tmpFile *os.File) (string, error) {
-	data, err := io.ReadAll(tmpFile)
-	if err != nil {
-		return "", fmt.Errorf("failed to read temp file: %w", err)
-	}
-
 	outputFile := fmt.Sprintf("%s.webp", req.ID)
-
-	uc.logger.Info(fmt.Sprintf("Converting and uploading %d bytes to %s", len(data), outputFile))
-	return uc.processing.ConvertWebPBufferToFile(ctx, data, outputFile)
+	uc.logger.Info(fmt.Sprintf("Converting and uploading to %s", outputFile))
+	return uc.processing.ConvertWebPBufferToFile(ctx, tmpFile, outputFile)
 }
 
 func (uc *UploadMediaStreamUsecase) createMediaEntity(

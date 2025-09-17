@@ -297,3 +297,8 @@ grpcurl -plaintext -d '{"info":{"file_name":"test.jpg","mime_type":"image/jpeg",
 # Get media by ID
 grpcurl -plaintext -d '{"id":"media-id"}' localhost:8082 media.MediaService/GetMedia
 ```
+
+
+## Exit status 0xc0000139
+
+Cần copy các file dll vào dự án để chạy, các file cần nằm cùng cấp với file chạy

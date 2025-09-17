@@ -31,7 +31,11 @@ build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o bin/$(BINARY_UNIX) -v ./cmd
 
 run:
-	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd && ./bin/$(BINARY_NAME)
+	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd/main.go && ./bin/$(BINARY_NAME)
+
+run-win:
+	cp C:/vips-dev/bin/*.dll ./bin/
+	$(GOBUILD) -o bin/$(BINARY_NAME).exe -v ./cmd/main.go && ./bin/$(BINARY_NAME).exe
 
 test:
 	$(GOTEST) -v ./...
@@ -98,12 +102,6 @@ dev-docker-drop-db:
 dev-docker-create-db:
 	docker exec -it postgres_container createdb -U postgres media_service_db
 
-dev-drop-db:
-	dropdb --force -U postgres media_service_db
-
-dev-create-db:
-	createdb -U postgres media_service_db
-
 # Docker operations (optional)
 docker-build:
 	docker build -t $(BINARY_NAME) .
@@ -126,15 +124,15 @@ generate:
 	$(GOCMD) generate ./...
 
 # Run with specific config
-run-dev:
-	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd && ./bin/$(BINARY_NAME)
-
 run-prod:
 	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd && \
 	CONFIG_FILE=prod.config.yaml ./bin/$(BINARY_NAME)
 
 run-proto:
 	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative proto/media/v1/media.proto
+
+client:
+	$(GOBUILD) -o bin/$(BINARY_NAME)-client -v ./cmd/client/main.go && ./bin/$(BINARY_NAME)-client
 
 # Help
 help:

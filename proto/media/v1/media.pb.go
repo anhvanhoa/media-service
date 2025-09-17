@@ -486,8 +486,9 @@ type UploadMediaRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FileName      string                 `protobuf:"bytes,1,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
 	CreatedBy     string                 `protobuf:"bytes,3,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
-	Metadata      map[string]string      `protobuf:"bytes,4,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	FileData      []byte                 `protobuf:"bytes,5,opt,name=file_data,json=fileData,proto3" json:"file_data,omitempty"`
+	OutputFile    string                 `protobuf:"bytes,4,opt,name=output_file,json=outputFile,proto3" json:"output_file,omitempty"`
+	Metadata      map[string]string      `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	FileData      []byte                 `protobuf:"bytes,6,opt,name=file_data,json=fileData,proto3" json:"file_data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -532,6 +533,13 @@ func (x *UploadMediaRequest) GetFileName() string {
 func (x *UploadMediaRequest) GetCreatedBy() string {
 	if x != nil {
 		return x.CreatedBy
+	}
+	return ""
+}
+
+func (x *UploadMediaRequest) GetOutputFile() string {
+	if x != nil {
+		return x.OutputFile
 	}
 	return ""
 }
@@ -1220,13 +1228,15 @@ const file_proto_media_v1_media_proto_rawDesc = "" +
 	"\x05chunk\x18\x02 \x01(\fH\x00R\x05chunkB\x06\n" +
 	"\x04data\"<\n" +
 	"\x13UploadMediaResponse\x12%\n" +
-	"\x05media\x18\x01 \x01(\v2\x0f.media.v1.MediaR\x05media\"\xf2\x01\n" +
+	"\x05media\x18\x01 \x01(\v2\x0f.media.v1.MediaR\x05media\"\x93\x02\n" +
 	"\x12UploadMediaRequest\x12\x1b\n" +
 	"\tfile_name\x18\x01 \x01(\tR\bfileName\x12\x1d\n" +
 	"\n" +
-	"created_by\x18\x03 \x01(\tR\tcreatedBy\x12F\n" +
-	"\bmetadata\x18\x04 \x03(\v2*.media.v1.UploadMediaRequest.MetadataEntryR\bmetadata\x12\x1b\n" +
-	"\tfile_data\x18\x05 \x01(\fR\bfileData\x1a;\n" +
+	"created_by\x18\x03 \x01(\tR\tcreatedBy\x12\x1f\n" +
+	"\voutput_file\x18\x04 \x01(\tR\n" +
+	"outputFile\x12F\n" +
+	"\bmetadata\x18\x05 \x03(\v2*.media.v1.UploadMediaRequest.MetadataEntryR\bmetadata\x12\x1b\n" +
+	"\tfile_data\x18\x06 \x01(\fR\bfileData\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"!\n" +

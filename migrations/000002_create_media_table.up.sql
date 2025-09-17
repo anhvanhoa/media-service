@@ -1,13 +1,13 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS media (
-    id VARCHAR(255) PRIMARY KEY,
-    created_by VARCHAR(255) NOT NULL,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    created_by VARCHAR(255),
     name VARCHAR(255) NOT NULL,
-    size BIGINT NOT NULL DEFAULT 0,
-    url VARCHAR(500) NOT NULL,
-    mime_type VARCHAR(100) NOT NULL,
-    type VARCHAR(50) NOT NULL,
+    size BIGINT DEFAULT 0,
+    url VARCHAR(500),
+    mime_type VARCHAR(100),
+    type VARCHAR(50),
     width INTEGER,
     height INTEGER,
     duration INTEGER,
