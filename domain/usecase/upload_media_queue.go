@@ -62,7 +62,7 @@ func (uc *UploadMediaQueueUsecase) Execute(ctx context.Context, req *UploadMedia
 }
 
 func (uc *UploadMediaQueueUsecase) TaskQueue(ctx context.Context, req *UploadMediaQueueRequest) (string, error) {
-	return uc.queue.EnqueueAnyTask(queue.TypeMediaProcess, queue.NewPayloadMediaProcess(req.ID))
+	return uc.queue.EnqueueAnyTask(queue.NewPayloadMediaProcess(req.ID))
 }
 
 func (uc *UploadMediaQueueUsecase) createMediaEntity(

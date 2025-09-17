@@ -106,9 +106,8 @@ func (c *MediaServiceClient) TestUploadMedia() {
 	resp, err := c.mediaClient.UploadMedia(ctx, &pb.UploadMediaRequest{
 		FileName:   fileName,
 		CreatedBy:  createdBy,
-		Metadata:   map[string]string{"tag": "test"},
 		FileData:   fileData,
-		OutputFile: outputFile,
+		OutputPath: outputFile,
 	})
 	if err != nil {
 		fmt.Printf("Error calling UploadMedia: %v\n", err)
@@ -138,6 +137,10 @@ func (c *MediaServiceClient) TestUploadMediaStream() {
 	fileName, _ := reader.ReadString('\n')
 	fileName = cleanInput(fileName)
 
+	fmt.Print("Enter output file: ")
+	outputFile, _ := reader.ReadString('\n')
+	outputFile = cleanInput(outputFile)
+
 	fmt.Print("Enter created by: ")
 	createdBy, _ := reader.ReadString('\n')
 	createdBy = cleanInput(createdBy)
@@ -163,9 +166,10 @@ func (c *MediaServiceClient) TestUploadMediaStream() {
 	info := &pb.UploadMediaChunk{
 		Data: &pb.UploadMediaChunk_Info{
 			Info: &pb.UploadMediaStreamRequest{
-				FileName:  fileName,
-				CreatedBy: createdBy,
-				Metadata:  map[string]string{"tag": "stream-test"},
+				FileName:   fileName,
+				CreatedBy:  createdBy,
+				OutputPath: outputFile,
+				Metadata:   map[string]string{"tag": "stream-test"},
 			},
 		},
 	}
@@ -331,13 +335,18 @@ func (c *MediaServiceClient) TestUpdateMedia() {
 	name, _ := reader.ReadString('\n')
 	name = cleanInput(name)
 
+	fmt.Print("Enter created by: ")
+	createdBy, _ := reader.ReadString('\n')
+	createdBy = cleanInput(createdBy)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	resp, err := c.mediaClient.UpdateMedia(ctx, &pb.UpdateMediaRequest{
-		Id:       id,
-		Name:     name,
-		Metadata: map[string]string{"updated": "true"},
+		Id:        id,
+		Name:      name,
+		Metadata:  map[string]string{"updated": "true"},
+		CreatedBy: createdBy,
 	})
 	if err != nil {
 		fmt.Printf("Error calling UpdateMedia: %v\n", err)
@@ -363,11 +372,16 @@ func (c *MediaServiceClient) TestDeleteMedia() {
 	id, _ := reader.ReadString('\n')
 	id = cleanInput(id)
 
+	fmt.Print("Enter created by: ")
+	createdBy, _ := reader.ReadString('\n')
+	createdBy = cleanInput(createdBy)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	resp, err := c.mediaClient.DeleteMedia(ctx, &pb.DeleteMediaRequest{
-		Id: id,
+		Id:        id,
+		CreatedBy: createdBy,
 	})
 	if err != nil {
 		fmt.Printf("Error calling DeleteMedia: %v\n", err)
@@ -375,66 +389,6 @@ func (c *MediaServiceClient) TestDeleteMedia() {
 	}
 
 	fmt.Printf("Delete Media result:\n")
-	fmt.Printf("Success: %t\n", resp.Success)
-}
-
-func (c *MediaServiceClient) TestGetMediaVariants() {
-	fmt.Println("\n=== Test Get Media Variants ===")
-
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Enter media ID: ")
-	mediaId, _ := reader.ReadString('\n')
-	mediaId = cleanInput(mediaId)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	resp, err := c.mediaClient.GetMediaVariants(ctx, &pb.GetMediaVariantsRequest{
-		MediaId: mediaId,
-	})
-	if err != nil {
-		fmt.Printf("Error calling GetMediaVariants: %v\n", err)
-		return
-	}
-
-	fmt.Printf("Get Media Variants result:\n")
-	fmt.Printf("Media ID: %s\n", mediaId)
-	fmt.Printf("Variants:\n")
-	for i, variant := range resp.Variants {
-		fmt.Printf("  [%d] ID: %s, Type: %s, Size: %s, Format: %s\n",
-			i+1, variant.Id, variant.Type, variant.Size, variant.Format)
-		fmt.Printf("      URL: %s\n", variant.Url)
-		fmt.Printf("      File Size: %d bytes, Dimensions: %dx%d, Quality: %d\n",
-			variant.FileSize, variant.Width, variant.Height, variant.Quality)
-	}
-}
-
-func (c *MediaServiceClient) TestProcessMedia() {
-	fmt.Println("\n=== Test Process Media ===")
-
-	reader := bufio.NewReader(os.Stdin)
-
-	fmt.Print("Enter media ID: ")
-	mediaId, _ := reader.ReadString('\n')
-	mediaId = cleanInput(mediaId)
-
-	fmt.Print("Enter process type (resize, thumbnail, compress, etc.): ")
-	processType, _ := reader.ReadString('\n')
-	processType = cleanInput(processType)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	resp, err := c.mediaClient.ProcessMedia(ctx, &pb.ProcessMediaRequest{
-		MediaId: mediaId,
-	})
-	if err != nil {
-		fmt.Printf("Error calling ProcessMedia: %v\n", err)
-		return
-	}
-
-	fmt.Printf("Process Media result:\n")
 	fmt.Printf("Success: %t\n", resp.Success)
 }
 
@@ -448,8 +402,6 @@ func printMainMenu() {
 	fmt.Println("4. List Media")
 	fmt.Println("5. Update Media")
 	fmt.Println("6. Delete Media")
-	fmt.Println("7. Get Media Variants")
-	fmt.Println("8. Process Media")
 	fmt.Println("0. Exit")
 	fmt.Print("Enter your choice: ")
 }
@@ -484,10 +436,6 @@ func main() {
 			client.TestUpdateMedia()
 		case "6":
 			client.TestDeleteMedia()
-		case "7":
-			client.TestGetMediaVariants()
-		case "8":
-			client.TestProcessMedia()
 		case "0":
 			fmt.Println("Goodbye!")
 			return

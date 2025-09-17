@@ -10,45 +10,6 @@ url_db: "postgres://postgres:123456@localhost:5432/media_service_db?sslmode=disa
 storage_local:
     upload_dir: "C:/uploads"
 
-# # Media processing configuration
-# media:
-#   max_file_size: 100MB # 100MB
-#   allowed_image_types:
-#     - "image/jpeg"
-#     - "image/png"
-#     - "image/gif"
-#     - "image/webp"
-#   allowed_video_types:
-#     - "video/mp4"
-#     - "video/webm"
-#     - "video/quicktime"
-#     - "video/x-msvideo"
-  
-  # Image optimization settings
-  # image:
-  #   max_width: 2048
-  #   max_height: 2048
-  #   quality: 85
-  #   formats:
-  #     - "webp"
-  #     - "jpeg"
-  #   thumbnails:
-  #     small: "150x150"
-  #     medium: "300x300"
-  #     large: "600x600"
-  
-  # # Video optimization settings
-  # video:
-  #   max_duration: 1800 # 30 minutes in seconds
-  #   max_bitrate: "2M"
-  #   formats:
-  #     - "mp4"
-  #     - "webm"
-  #   resolutions:
-  #     - "480p"
-  #     - "720p"
-  #     - "1080p"
-
 # gRPC client configurations
 # grpc_clients:
 #   auth_service:
@@ -64,9 +25,3 @@ queue:
   timeout: 30
   tls: false
   retry: 3
-
-# # Logging configuration
-# logging:
-#   level: "debug"
-#   format: "json"
-#   output: "stdout"

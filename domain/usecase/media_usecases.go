@@ -71,6 +71,7 @@ func NewMediaUsecases(
 		DeleteUC: NewDeleteMediaUsecase(
 			mediaRepo,
 			logger,
+			storage,
 		),
 	}
 }

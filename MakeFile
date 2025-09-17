@@ -31,7 +31,7 @@ build-linux:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) -o bin/$(BINARY_UNIX) -v ./cmd
 
 run:
-	$(GOBUILD) -o bin/$(BINARY_NAME) -v ./cmd/main.go && ./bin/$(BINARY_NAME)
+	go run ./cmd/main.go
 
 run-win:
 	cp C:/vips-dev/bin/*.dll ./bin/

@@ -4,7 +4,6 @@ import (
 	"media-service/domain/usecase"
 	"media-service/infrastructure/grpc_service"
 	"media-service/infrastructure/repo"
-	"time"
 
 	"github.com/anhvanhoa/sf-proto/gen/media/v1"
 
@@ -47,7 +46,6 @@ func NewApp() *App {
 		env.Queue.Network,
 		env.Queue.Password,
 		env.Queue.Db,
-		time.Duration(env.Queue.Timeout),
 		nil,
 		env.Queue.Retry,
 	))

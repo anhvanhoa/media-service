@@ -21,37 +21,19 @@ import (
 )
 
 type MediaServiceServer struct {
-	media.UnimplementedMediaServiceServer
+	media.UnsafeMediaServiceServer
 	mediaUsecases usecase.MediaUsecaseInterfaces
 	logger        *log.LogGRPCImpl
 	uuid          goid.GoUUID
 }
 
-func NewMediaServiceServer(mediaUsecases usecase.MediaUsecaseInterfaces, logger *log.LogGRPCImpl) *MediaServiceServer {
+func NewMediaServiceServer(mediaUsecases usecase.MediaUsecaseInterfaces, logger *log.LogGRPCImpl) media.MediaServiceServer {
 	uuid := goid.NewGoId().UUID()
 	return &MediaServiceServer{
 		mediaUsecases: mediaUsecases,
 		logger:        logger,
 		uuid:          uuid,
 	}
-}
-
-func (s *MediaServiceServer) UploadMedia(ctx context.Context, req *media.UploadMediaRequest) (*media.UploadMediaResponse, error) {
-	m, err := s.mediaUsecases.UploadMedia(ctx, &usecase.UploadMediaRequest{
-		Name:       req.GetFileName(),
-		FileData:   bytes.NewReader(req.FileData),
-		CreatedBy:  req.CreatedBy,
-		Metadata:   req.Metadata,
-		OutputFile: req.OutputFile,
-	})
-	if err != nil {
-		s.logger.Error(fmt.Sprintf("Failed to upload media: %v", err))
-		return nil, status.Errorf(codes.Internal, "failed to upload media: %v", err)
-	}
-
-	return &media.UploadMediaResponse{
-		Media: s.entityToProto(m),
-	}, nil
 }
 
 func (s *MediaServiceServer) UploadMediaStream(stream media.MediaService_UploadMediaStreamServer) error {

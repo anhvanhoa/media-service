@@ -82,6 +82,17 @@ func (uc *UploadMediaStreamUsecase) Execute(ctx context.Context, req *UploadMedi
 	} else {
 		width = meta.Width
 		height = meta.Height
+		req.Ext = entity.ExtWebP
+	}
+
+	if err := uc.resetFilePointer(file); err != nil {
+		return nil, fmt.Errorf("failed to reset file pointer: %w", err)
+	}
+
+	url, err := uc.uploadToStorage(ctx, req, file)
+	if err != nil {
+		uc.logger.Error(fmt.Sprintf("Failed to upload to storage: %v", err))
+		return nil, fmt.Errorf("storage upload failed: %w", err)
 	}
 
 	media := uc.createMediaEntity(
