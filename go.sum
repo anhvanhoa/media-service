@@ -4,8 +4,6 @@ buf.build/go/protovalidate v0.14.0 h1:kr/rC/no+DtRyYX+8KXLDxNnI1rINz0imk5K44ZpZ3
 buf.build/go/protovalidate v0.14.0/go.mod h1:+F/oISho9MO7gJQNYC2VWLzcO1fTPmaTA08SDYJZncA=
 cel.dev/expr v0.24.0 h1:56OvJKSH3hDGL0ml5uSxZmz3/3Pq4tJ+fb1unVLAFcY=
 cel.dev/expr v0.24.0/go.mod h1:hLPLo1W4QUmuYdA72RBX06QTs6MXw941piREPl3Yfiw=
-github.com/anhvanhoa/service-core v0.0.0-20250903033254-16d20b840cca h1:GlZaQ0bCiKSimpsvIUfKSFs1E4SyHpEs3637gr4WJyI=
-github.com/anhvanhoa/service-core v0.0.0-20250903033254-16d20b840cca/go.mod h1:ciFblCCLxZkKTDeoMnuxRLsRdIVu1pOt4mjmLZZIPOg=
 github.com/anhvanhoa/service-core v0.0.0-20250917141253-79fea82b6746 h1:TOZdgDfJ9Ru69KSR70vwxFd/i4D28aO8W+39iAzufgs=
 github.com/anhvanhoa/service-core v0.0.0-20250917141253-79fea82b6746/go.mod h1:ciFblCCLxZkKTDeoMnuxRLsRdIVu1pOt4mjmLZZIPOg=
 github.com/anhvanhoa/sf-proto v0.0.0-20250917185233-b5f0bd2a2cd5 h1:S51Q8ddyh0VIftyjq05mejdXw+x7XY5fVtKkPfeAjEk=
