@@ -17,6 +17,7 @@ DB_USER=postgres
 DB_PASSWORD=123456
 DB_NAME=media_service_db
 DB_URL=postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+NAME_CONTAINER=postgis-gis
 
 # Migration parameters
 MIGRATE_VERSION=v4.17.0
@@ -70,17 +71,17 @@ dev-drop-db:
 	dropdb -h $(DB_HOST) -p $(DB_PORT) -U $(DB_USER) $(DB_NAME)
 
 # Migration operations
-migrate-up:
+up:
 	migrate -path migrations -database "$(DB_URL)" up
 
-migrate-down:
+down:
 	migrate -path migrations -database "$(DB_URL)" down
 
-migrate-reset:
+reset:
 	migrate -path migrations -database "$(DB_URL)" down
 	migrate -path migrations -database "$(DB_URL)" up
 
-migrate-force:
+force:
 	migrate -path migrations -database "$(DB_URL)" force $(VERSION)
 
 migrate-version:
@@ -97,10 +98,10 @@ dev-reset: dev-drop-db dev-create-db migrate-up
 	@echo "Development environment reset complete"
 
 dev-docker-drop-db:
-	docker exec -it postgres_container dropdb --force -U postgres media_service_db
+	docker exec -it $(NAME_CONTAINER) dropdb --force -U postgres media_service_db
 
 dev-docker-create-db:
-	docker exec -it postgres_container createdb -U postgres media_service_db
+	docker exec -it $(NAME_CONTAINER) createdb -U postgres media_service_db
 
 # Docker operations (optional)
 docker-build:

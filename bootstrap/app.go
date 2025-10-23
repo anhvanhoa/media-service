@@ -9,10 +9,13 @@ import (
 
 	"github.com/anhvanhoa/service-core/bootstrap/db"
 	grpc_server "github.com/anhvanhoa/service-core/bootstrap/grpc"
+	"github.com/anhvanhoa/service-core/domain/cache"
 	"github.com/anhvanhoa/service-core/domain/log"
 	"github.com/anhvanhoa/service-core/domain/processing"
 	"github.com/anhvanhoa/service-core/domain/queue"
 	"github.com/anhvanhoa/service-core/domain/storage"
+	"github.com/anhvanhoa/service-core/domain/user_context"
+	"github.com/anhvanhoa/service-core/utils"
 	"github.com/go-pg/pg/v10"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
@@ -27,6 +30,8 @@ type App struct {
 	MediaUsecases usecase.MediaUsecaseInterfaces
 	Storage       storage.StorageI
 	MediaServer   media.MediaServiceServer
+	Helper        utils.Helper
+	Cache         cache.CacheI
 }
 
 func NewApp() *App {
@@ -69,6 +74,18 @@ func NewApp() *App {
 		storageService,
 	)
 
+	helper := utils.NewHelper()
+	configRedis := cache.NewConfigCache(
+		env.DbCache.Addr,
+		env.DbCache.Password,
+		env.DbCache.Db,
+		env.DbCache.Network,
+		env.DbCache.MaxIdle,
+		env.DbCache.MaxActive,
+		env.DbCache.IdleTimeout,
+	)
+	cache := cache.NewCache(configRedis)
+
 	mediaServiceServer := grpc_service.NewMediaServiceServer(mediaUsecases, logger)
 
 	return &App{
@@ -79,6 +96,8 @@ func NewApp() *App {
 		MediaUsecases: mediaUsecases,
 		Storage:       storageService,
 		MediaServer:   mediaServiceServer,
+		Helper:        helper,
+		Cache:         cache,
 	}
 }
 
@@ -88,11 +107,31 @@ func (app *App) Start() *grpc_server.GRPCServer {
 		PortGRPC:     app.Env.PortGrpc,
 		NameService:  app.Env.NameService,
 	}
+	middleware := grpc_server.NewMiddleware()
 	return grpc_server.NewGRPCServer(
 		config,
 		app.Logger,
 		func(server *grpc.Server) {
 			media.RegisterMediaServiceServer(server, app.MediaServer)
 		},
+		middleware.AuthorizationInterceptor(
+			app.Env.SecretService,
+			func(action string, resource string) bool {
+				hasPermission, err := app.Cache.Get(resource + "." + action)
+				if err != nil {
+					return false
+				}
+				return hasPermission != nil && string(hasPermission) == "true"
+			},
+			func(id string) *user_context.UserContext {
+				userData, err := app.Cache.Get(id)
+				if err != nil || userData == nil {
+					return nil
+				}
+				uCtx := user_context.NewUserContext()
+				uCtx.FromBytes(userData)
+				return uCtx
+			},
+		),
 	)
 }

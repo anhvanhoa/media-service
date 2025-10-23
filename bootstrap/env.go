@@ -20,21 +20,30 @@ type QueueRedis struct {
 	Tls      bool   `mapstructure:"tls"`
 	Retry    int    `mapstructure:"retry"`
 }
+type dbCache struct {
+	Addr        string `mapstructure:"addr"`
+	Db          int    `mapstructure:"db"`
+	Password    string `mapstructure:"password"`
+	MaxIdle     int    `mapstructure:"max_idle"`
+	MaxActive   int    `mapstructure:"max_active"`
+	IdleTimeout int    `mapstructure:"idle_timeout"`
+	Network     string `mapstructure:"network"`
+}
 
 type Env struct {
-	NodeEnv       string `mapstructure:"node_env"`
-	UrlDb         string `mapstructure:"url_db"`
-	NameService   string `mapstructure:"name_service"`
-	PortGrpc      int    `mapstructure:"port_grpc"`
-	HostGrpc      string `mapstructure:"host_grpc"`
-	IntervalCheck string `mapstructure:"interval_check"`
-	TimeoutCheck  string `mapstructure:"timeout_check"`
-
-	Queue *QueueRedis `mapstructure:"queue"`
-
-	StorageLocal *StorageLocal `mapstructure:"storage_local"`
-
-	GrpcClients []*grpc_client.ConfigGrpc `mapstructure:"grpc_clients"`
+	NodeEnv               string                    `mapstructure:"node_env"`
+	SecretService         string                    `mapstructure:"secret_service"`
+	UrlDb                 string                    `mapstructure:"url_db"`
+	NameService           string                    `mapstructure:"name_service"`
+	PortGrpc              int                       `mapstructure:"port_grpc"`
+	HostGrpc              string                    `mapstructure:"host_grpc"`
+	IntervalCheck         string                    `mapstructure:"interval_check"`
+	TimeoutCheck          string                    `mapstructure:"timeout_check"`
+	Queue                 *QueueRedis               `mapstructure:"queue"`
+	StorageLocal          *StorageLocal             `mapstructure:"storage_local"`
+	GrpcClients           []*grpc_client.ConfigGrpc `mapstructure:"grpc_clients"`
+	PermissionServiceAddr string                    `mapstructure:"permission_service_addr"`
+	DbCache               *dbCache                  `mapstructure:"db_cache"`
 }
 
 func NewEnv(env any) {
