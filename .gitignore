@@ -26,6 +26,7 @@ go.work
 # Config files (keep only dev config)
 config.yaml
 prod.config.yaml
+media_service.config.yaml
 
 # Log files
 *.log
@@ -57,3 +58,10 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Security: Exclude token files
+*.token
+*_token.txt
+github_token.txt
+.github_token
+.github_token.txt

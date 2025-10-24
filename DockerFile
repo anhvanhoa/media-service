@@ -1,0 +1,65 @@
+# Build stage
+FROM golang:1.25-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Install git and ca-certificates (needed for go mod download)
+RUN apk add --no-cache git ca-certificates musl-dev vips-dev gcc upx
+
+# Configure git for private repositories
+RUN git config --global url."https://github.com/".insteadOf "git@github.com:" && \
+    git config --global url."https://".insteadOf "git://"
+
+# Set up authentication for private repositories using BuildKit secrets
+RUN --mount=type=secret,id=github_token \
+    if [ -f /run/secrets/github_token ]; then \
+        GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
+        echo "machine github.com login $GITHUB_TOKEN password x-oauth-basic" > ~/.netrc && \
+        chmod 600 ~/.netrc; \
+    fi
+
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod tidy
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
+
+# Final stage
+FROM alpine:latest
+
+# Install ca-certificates for HTTPS requests
+RUN apk --no-cache add ca-certificates
+RUN apk add vips --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
+
+# Create non-root user
+RUN adduser -D -s /bin/sh appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy the binary from builder stage
+COPY --from=builder /app/main .
+
+
+# Change ownership to appuser
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 50063
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:50063/health || exit 1
+
+# Run the application
+CMD ["./main"]

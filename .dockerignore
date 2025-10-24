@@ -1,0 +1,12 @@
+/bin
+/README.md
+/CONTRIBUTING.md
+/LICENSE
+/Makefile
+/docker-compose.yml
+/DockerFile
+/dev.config.yaml
+/prod.config.yaml
+/permission_service.config.yaml
+/permission_service.config.yaml
+/migrations
