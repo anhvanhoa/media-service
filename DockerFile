@@ -11,25 +11,24 @@ RUN apk add --no-cache git ca-certificates musl-dev vips-dev gcc upx
 RUN git config --global url."https://github.com/".insteadOf "git@github.com:" && \
     git config --global url."https://".insteadOf "git://"
 
-# Set up authentication for private repositories using BuildKit secrets
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Set up authentication and download dependencies
 RUN --mount=type=secret,id=github_token \
     if [ -f /run/secrets/github_token ]; then \
         GITHUB_TOKEN=$(cat /run/secrets/github_token) && \
         echo "machine github.com login $GITHUB_TOKEN password x-oauth-basic" > ~/.netrc && \
-        chmod 600 ~/.netrc; \
-    fi
-
-# Copy go mod files
-COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod tidy
+        chmod 600 ~/.netrc && \
+        git config --global url."https://$GITHUB_TOKEN@github.com/".insteadOf "https://github.com/"; \
+    fi && \
+    go mod tidy
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/main.go
+RUN go build -o main ./cmd/main.go && upx -9 main
 
 # Final stage
 FROM alpine:latest

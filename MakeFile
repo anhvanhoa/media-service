@@ -104,7 +104,7 @@ dev-docker-create-db:
 	docker exec -it $(NAME_CONTAINER) createdb -U postgres media_service_db
 
 # Docker operations (optional)
-docker-build:
+docker-build-simple:
 	docker build -t $(BINARY_NAME) .
 
 docker-run:
@@ -137,6 +137,9 @@ client:
 
 docker-build: ## Build the application and run it in the container
 	export NODE_ENV=${NODE_ENV} CONFIG_FILE=${CONFIG_FILE} && docker compose up -d --build
+
+docker-build-no-cache: ## Build the application with no cache and run it in the container
+	export NODE_ENV=${NODE_ENV} CONFIG_FILE=${CONFIG_FILE} && docker compose build --no-cache && docker compose up -d
 
 # Help
 help:

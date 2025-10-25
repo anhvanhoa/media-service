@@ -1,7 +1,7 @@
 node_env: "development"
 secret_service: 'MediaServiceSecret'
 name_service: "MediaService"
-port_grpc: 50053
+port_grpc: 50063
 host_grpc: "localhost"
 interval_check: "20s"
 timeout_check: "5s"
