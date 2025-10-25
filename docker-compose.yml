@@ -8,7 +8,7 @@ services:
     image: media_service:latest
     container_name: media_service_app
     ports:
-      - "50063:50063"
+      - "40063:40063"
     networks:
       - sf_network
     environment:
@@ -25,7 +25,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:50063/health",
+          "http://localhost:40063/health",
         ]
       interval: 30s
       timeout: 10s
