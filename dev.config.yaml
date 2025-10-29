@@ -1,5 +1,6 @@
 node_env: "development"
 secret_service: 'MediaServiceSecret'
+access_secret: "your-access-jwt-secret-here"
 name_service: "MediaService"
 port_grpc: 40063
 host_grpc: "localhost"

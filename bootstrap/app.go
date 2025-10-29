@@ -14,6 +14,7 @@ import (
 	"github.com/anhvanhoa/service-core/domain/processing"
 	"github.com/anhvanhoa/service-core/domain/queue"
 	"github.com/anhvanhoa/service-core/domain/storage"
+	"github.com/anhvanhoa/service-core/domain/token"
 	"github.com/anhvanhoa/service-core/domain/user_context"
 	"github.com/anhvanhoa/service-core/utils"
 	"github.com/go-pg/pg/v10"
@@ -107,7 +108,9 @@ func (app *App) Start() *grpc_server.GRPCServer {
 		PortGRPC:     app.Env.PortGrpc,
 		NameService:  app.Env.NameService,
 	}
-	middleware := grpc_server.NewMiddleware()
+	middleware := grpc_server.NewMiddleware(
+		token.NewToken(app.Env.AccessSecret),
+	)
 	return grpc_server.NewGRPCServer(
 		config,
 		app.Logger,
